@@ -93,24 +93,18 @@ paths:
       responses:
         200:
           description: successful operation
-  /user/favourite:
+  /user/favourite/{drinkId}:
     put:
       tags:
         - authorized
       summary: Add a new favourite drink
       description: ''
-      requestBody:
-        description: The id of the drink to add as a favourite
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - drinkId
-              properties:
-                drinkId:
-                  type: number
-                  example: 10
+      parameters:
+        - in: path
+          name: drinkId
+          schema:
+            type: integer
+          required: true
       responses:
         '200':
           description: OK
@@ -121,18 +115,12 @@ paths:
         - authorized
       summary: Remove a favourite drink
       description: ''
-      requestBody:
-        description: The id of the drink to add as a favourite
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - drinkId
-              properties:
-                drinkId:
-                  type: number
-                  example: 10
+      parameters:
+        - in: path
+          name: drinkId
+          schema:
+            type: integer
+          required: true
       responses:
         '200':
           description: OK
