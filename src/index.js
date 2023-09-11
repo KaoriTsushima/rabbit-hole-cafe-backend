@@ -1,6 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import { DynamoDBClient, ListTablesCommand } from "@aws-sdk/client-dynamodb";
+import bcrypt from "bcrypt";
 
 dotenv.config();
 const dbClient = new DynamoDBClient({
@@ -27,6 +28,20 @@ app.post("/login", (req, res) => {
     return res.sendStatus(403);
   }
   res.send("Login successful!");
+});
+
+app.post("/user", async (req, res) => {
+  console.log(req.body);
+
+  const hash = await bcrypt.hash(req.body.password, 10); //instead of calling back function
+  console.log(hash);
+  res.status(201).send();
+});
+
+app.post("/user/login", async (req, res) => {
+  const hash = "$2b$10$d2SodQUlWjwT0dZLgkvDI.SYixCDxz70NESR7FbgtzXi92LhL5YNO";
+
+  res.status(200).send();
 });
 
 app.listen(port, () => {
