@@ -41,7 +41,13 @@ app.post("/user", async (req, res) => {
 app.post("/user/login", async (req, res) => {
   const hash = "$2b$10$d2SodQUlWjwT0dZLgkvDI.SYixCDxz70NESR7FbgtzXi92LhL5YNO";
 
-  res.status(200).send();
+  const match = await bcrypt.compare(req.body.password, hash);
+
+  if (match) {
+    res.status(200).send();
+  } else {
+    res.status(400).send();
+  }
 });
 
 app.listen(port, () => {
