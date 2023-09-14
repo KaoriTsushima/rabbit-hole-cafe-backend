@@ -2,6 +2,11 @@ import express from "express";
 import dotenv from "dotenv";
 import { DynamoDBClient, ListTablesCommand } from "@aws-sdk/client-dynamodb";
 import bcrypt from "bcrypt";
+import {
+  DynamoDBDocumentClient,
+  GetCommand,
+  PutCommand,
+} from "@aws-sdk/lib-dynamodb";
 
 dotenv.config();
 const dbClient = new DynamoDBClient({
@@ -11,6 +16,8 @@ const dbClient = new DynamoDBClient({
     secretAccessKey: process.env.SECRET_ACCESS_KEY,
   },
 });
+
+const docClient = DynamoDBDocumentClient.from(dbClient);
 
 const app = express();
 const port = 8000;
@@ -22,19 +29,42 @@ app.get("/", async (req, res) => {
   res.send(response);
 });
 
-app.post("/login", (req, res) => {
-  console.log(req.body);
-  if (req.body.password !== "sakura") {
-    return res.sendStatus(403);
-  }
-  res.send("Login successful!");
-});
+// app.post("/login", (req, res) => {
+//   console.log(req.body);
+//   if (req.body.password !== "sakura") {
+//     return res.sendStatus(403);
+//   }
+//   res.send("Login successful!");
+// });
 
 app.post("/user", async (req, res) => {
   console.log(req.body);
 
+  const checkExistingEmail = new GetCommand({
+    TableName: "RHC-USERS",
+    Key: {
+      email: req.body.email,
+    },
+  });
+  const response = await docClient.send(checkExistingEmail);
+
+  if (response.Item) {
+    return res.status(409).send("Email already exists.");
+  }
+
   const hash = await bcrypt.hash(req.body.password, 10); //instead of calling back function
   console.log(hash);
+
+  const createNewAccount = new PutCommand({
+    TableName: "RHC-USERS",
+    Item: {
+      email: req.body.email,
+      passwordHash: hash,
+      favourites: [],
+    },
+  });
+
+  await docClient.send(createNewAccount);
   res.status(201).send();
 });
 
