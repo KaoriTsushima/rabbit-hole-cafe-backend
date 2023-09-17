@@ -83,7 +83,8 @@ app.post("/user/login", async (req, res) => {
 
   const match = await bcrypt.compare(req.body.password, user.passwordHash);
   if (match) {
-    res.status(200).send();
+    delete user.passwordHash;
+    res.status(200).send(user);
   } else {
     res.status(400).send(LOGIN_ERROR_MESSAGE);
   }
