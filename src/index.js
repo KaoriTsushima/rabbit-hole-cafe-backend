@@ -19,6 +19,8 @@ const dbClient = new DynamoDBClient({
 
 const docClient = DynamoDBDocumentClient.from(dbClient);
 
+const LOGIN_ERROR_MESSAGE = "Something wrong. Try again";
+
 const app = express();
 const port = 8000;
 
@@ -38,8 +40,6 @@ app.get("/", async (req, res) => {
 // });
 
 app.post("/user", async (req, res) => {
-  console.log(req.body);
-
   const checkExistingEmail = new GetCommand({
     TableName: "RHC-USERS",
     Key: {
@@ -69,14 +69,23 @@ app.post("/user", async (req, res) => {
 });
 
 app.post("/user/login", async (req, res) => {
-  const hash = "$2b$10$d2SodQUlWjwT0dZLgkvDI.SYixCDxz70NESR7FbgtzXi92LhL5YNO";
+  const getUserByEmail = new GetCommand({
+    TableName: "RHC-USERS",
+    Key: {
+      email: req.body.email,
+    },
+  });
+  const response = await docClient.send(getUserByEmail);
+  const user = response.Item;
+  if (!user) {
+    return res.status(400).send(LOGIN_ERROR_MESSAGE);
+  }
 
-  const match = await bcrypt.compare(req.body.password, hash);
-
+  const match = await bcrypt.compare(req.body.password, user.passwordHash);
   if (match) {
     res.status(200).send();
   } else {
-    res.status(400).send();
+    res.status(400).send(LOGIN_ERROR_MESSAGE);
   }
 });
 
