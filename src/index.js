@@ -1,5 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
+import cookieParser from "cookie-parser";
 import { DynamoDBClient, ListTablesCommand } from "@aws-sdk/client-dynamodb";
 import bcrypt from "bcrypt";
 import {
@@ -7,6 +8,8 @@ import {
   GetCommand,
   PutCommand,
 } from "@aws-sdk/lib-dynamodb";
+import { generateJWT } from "./utils/jwt.js";
+import { auth } from "./middleware/auth.js";
 
 dotenv.config();
 const dbClient = new DynamoDBClient({
@@ -18,13 +21,16 @@ const dbClient = new DynamoDBClient({
 });
 
 const docClient = DynamoDBDocumentClient.from(dbClient);
+const cookieOptions = { maxAge: 60 * 60 * 1000, httpOnly: true, path: "/" };
 
+const TOKEN_COOKIE_NAME = "token";
 const LOGIN_ERROR_MESSAGE = "Something wrong. Try again";
 
 const app = express();
 const port = 8000;
 
 app.use(express.json());
+app.use(cookieParser())
 app.get("/", async (req, res) => {
   const command = new ListTablesCommand({});
   const response = await dbClient.send(command);
@@ -84,11 +90,18 @@ app.post("/user/login", async (req, res) => {
   const match = await bcrypt.compare(req.body.password, user.passwordHash);
   if (match) {
     delete user.passwordHash;
+    const jwt = generateJWT(req.body.email);
+  
+    res.cookie(TOKEN_COOKIE_NAME, jwt, cookieOptions);
     res.status(200).send(user);
   } else {
     res.status(400).send(LOGIN_ERROR_MESSAGE);
   }
 });
+
+app.get("/test/auth", auth, async(req, res) => {
+  return res.status(200).send(res.decodedJwt)
+})
 
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
